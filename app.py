@@ -39,14 +39,16 @@ os.makedirs(DB_DIR, exist_ok=True)
 
 class AskRequest(BaseModel):
     query: str
-
 @app.post("/upload")
 async def upload_pdf(file: UploadFile):
     filename = file.filename
     pdf_path = os.path.join(UPLOAD_DIR, filename)
 
-    with open(pdf_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    try:
+        with open(pdf_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+    except PermissionError:
+        return JSONResponse(status_code=500, content={"error": "Permission denied saat menyimpan file. Pastikan folder './uploads' punya izin tulis."})
 
     pdf_reader = PdfReader(pdf_path)
     text = "".join(page.extract_text() for page in pdf_reader.pages if page.extract_text())
@@ -57,7 +59,7 @@ async def upload_pdf(file: UploadFile):
     embeddings = OpenAIEmbeddings()
 
     if os.path.exists(VECTOR_STORE_PATH):
-        vectordb = FAISS.load_local(VECTOR_STORE_PATH, embeddings)
+        vectordb = FAISS.load_local(VECTOR_STORE_PATH, embeddings, allow_dangerous_deserialization=True)
         vectordb.add_texts(chunks)
     else:
         vectordb = FAISS.from_texts(chunks, embeddings)
