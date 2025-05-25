@@ -12,8 +12,19 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.llms import OpenAI
 from dotenv import load_dotenv
 load_dotenv()
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://smkn1tegalsari.sch.id"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 UPLOAD_DIR = "./uploads"
 DB_DIR = "./db"
