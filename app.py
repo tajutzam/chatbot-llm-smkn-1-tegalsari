@@ -39,6 +39,11 @@ os.makedirs(DB_DIR, exist_ok=True)
 
 class AskRequest(BaseModel):
     query: str
+
+
+class DeleteRequest(BaseModel):
+    filename: str
+
 @app.post("/upload")
 async def upload_pdf(file: UploadFile):
     filename = file.filename
@@ -86,3 +91,25 @@ async def ask_question(request: AskRequest):
     
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Terjadi kesalahan: {str(e)}"})
+    
+
+@app.get("/list-files")
+async def list_uploaded_files():
+    try:
+        files = [f for f in os.listdir(UPLOAD_DIR) if f.endswith(".pdf")]
+        return JSONResponse(content={"files": files})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# --- Hapus file PDF dari uploads ---
+@app.post("/delete-file")
+async def delete_file(request: DeleteRequest):
+    filename = request.filename
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return JSONResponse(content={"success": True, "message": f"{filename} berhasil dihapus."})
+    else:
+        return JSONResponse(status_code=404, content={"success": False, "message": "File tidak ditemukan."})
